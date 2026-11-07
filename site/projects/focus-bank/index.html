@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Focus Bank — earn your rewards</title>
+<meta name="description" content="A gamified productivity timer: focused hours earn money toward real rewards; distractions cost you. Data stays in your browser.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0e1117; --card:#161b26; --card2:#1b2130; --border:#252c3d;
+    --text:#e6e9f0; --muted:#8b93a7; --green:#4ade80; --red:#f87171;
+    --violet:#8b5cf6; --violet2:#a78bfa; --gold:#fbbf24; --ringbg:#242b3d;
+    --display:'Space Grotesk',sans-serif; --body:'Inter',system-ui,sans-serif;
+    --mono:'JetBrains Mono',monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--text);font-family:var(--body);line-height:1.5}
+  .wrap{max-width:560px;margin:0 auto;padding:18px 18px 60px}
+  a{color:var(--violet2);text-decoration:none}
+
+  nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+  nav .back{font-size:13px;color:var(--muted)}
+  nav .back:hover{color:var(--text)}
+  nav h1{font-family:var(--display);font-size:18px}
+
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;
+        padding:18px;margin-bottom:14px}
+
+  /* wallet */
+  .wallet{text-align:center}
+  .wallet .label{font-family:var(--mono);font-size:10px;letter-spacing:.16em;
+                 color:var(--muted);text-transform:uppercase}
+  .wallet .amount{font-family:var(--display);font-size:42px;font-weight:700;
+                  color:var(--green);line-height:1.15}
+  .wallet .amount.neg{color:var(--red)}
+  .wallet .stats{font-size:12.5px;color:var(--muted)}
+
+  /* timer */
+  .timer{text-align:center}
+  .setup{display:flex;justify-content:center;align-items:center;gap:8px;
+         font-size:14px;color:var(--muted);margin-bottom:6px}
+  input[type=number]{width:64px;text-align:center;background:var(--card2);
+        color:var(--text);border:1px solid var(--border);border-radius:8px;
+        padding:7px 4px;font:600 14px var(--body)}
+  input[type=number]:focus{outline:none;border-color:var(--violet)}
+  .ringbox{position:relative;width:230px;height:230px;margin:6px auto}
+  .ringbox svg{transform:rotate(-90deg)}
+  #ringProg{stroke:var(--violet);stroke-linecap:round}
+  .ringbox .center{position:absolute;inset:0;display:flex;flex-direction:column;
+                   align-items:center;justify-content:center}
+  #timeText{font-family:var(--mono);font-size:34px;font-weight:700}
+  #stateText{font-size:12px;color:var(--muted);margin-top:2px}
+  #sessionValue{font-size:13px;color:var(--muted);margin-bottom:12px}
+
+  button{border:0;border-radius:9px;padding:11px 18px;font:600 14px var(--body);
+         cursor:pointer;color:#fff;transition:filter .12s,transform .05s}
+  button:hover{filter:brightness(1.15)}
+  button:active{transform:scale(.98)}
+  button:disabled{opacity:.4;cursor:default;filter:none}
+  .btn-primary{background:var(--violet)}
+  .btn-neutral{background:#2f3a52}
+  .btn-danger{background:#3d1f27;color:var(--red)}
+  .btn-green{background:#1f3d2b;color:var(--green)}
+  .btnrow{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+  .btnrow + .btnrow{margin-top:10px}
+
+  /* settings */
+  .settings{display:flex;justify-content:center;align-items:center;gap:8px;
+            flex-wrap:wrap;font-size:13px;color:var(--muted)}
+
+  /* shop + history */
+  h2{font-family:var(--display);font-size:16px;margin-bottom:10px;
+     display:flex;justify-content:space-between;align-items:center}
+  h2 .actions{display:flex;gap:6px}
+  h2 .actions button{padding:6px 12px;font-size:12.5px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--muted);
+     text-transform:uppercase;text-align:left;padding:6px 8px;
+     border-bottom:1px solid var(--border)}
+  td{padding:8px;border-bottom:1px solid var(--card2)}
+  tr:last-child td{border-bottom:0}
+  tbody tr.sel{background:var(--card2);outline:1px solid var(--violet)}
+  #shopBody tr{cursor:pointer}
+  .num{font-family:var(--mono);font-size:12.5px}
+  .pos{color:var(--green)} .negc{color:var(--red)}
+  .aff{color:var(--gold);font-weight:600} .dim{color:var(--muted)}
+  .empty{color:var(--muted);font-size:13px;text-align:center;padding:14px 0}
+
+  /* toasts + modal */
+  #toasts{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);
+          display:flex;flex-direction:column;gap:8px;z-index:50;width:min(420px,92vw)}
+  .toast{background:var(--card2);border:1px solid var(--violet);border-radius:11px;
+         padding:12px 16px;font-size:14px;box-shadow:0 8px 30px rgba(0,0,0,.5);
+         animation:pop .2s ease-out}
+  @keyframes pop{from{opacity:0;transform:translateY(8px)}to{opacity:1}}
+  dialog{background:var(--card);color:var(--text);border:1px solid var(--border);
+         border-radius:14px;padding:22px;max-width:340px;width:90vw}
+  dialog::backdrop{background:rgba(0,0,0,.6)}
+  dialog h3{font-family:var(--display);margin-bottom:12px;font-size:17px}
+  dialog label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
+  dialog input{width:100%;background:var(--card2);color:var(--text);
+        border:1px solid var(--border);border-radius:8px;padding:9px;font:14px var(--body)}
+  dialog .btnrow{justify-content:flex-end;margin-top:16px}
+
+  .foot{font-size:12px;color:var(--muted);text-align:center;margin-top:6px}
+  .foot button{background:none;color:var(--violet2);padding:0;font-size:12px}
+  @media(prefers-reduced-motion:reduce){.toast{animation:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <nav>
+    <h1>Focus Bank 💰</h1>
+    <a class="back" href="/">← hoangmnguyen.com</a>
+  </nav>
+
+  <div class="card wallet">
+    <div class="label">Total balance · carries over</div>
+    <div class="amount" id="balance">$0.00</div>
+    <div class="stats" id="monthStats"></div>
+  </div>
+
+  <div class="card timer">
+    <div class="setup">
+      Session length
+      <input type="number" id="minutes" min="1" step="1" value="25"> min
+    </div>
+    <div class="ringbox">
+      <svg width="230" height="230" viewBox="0 0 230 230">
+        <circle cx="115" cy="115" r="101" fill="none" stroke="var(--ringbg)" stroke-width="12"/>
+        <circle id="ringProg" cx="115" cy="115" r="101" fill="none" stroke-width="12"
+                stroke-dasharray="634.6" stroke-dashoffset="0"/>
+      </svg>
+      <div class="center">
+        <div id="timeText">25:00</div>
+        <div id="stateText">ready</div>
+      </div>
+    </div>
+    <div id="sessionValue">&nbsp;</div>
+    <div class="btnrow">
+      <button class="btn-primary" id="startBtn">▶ Start</button>
+      <button class="btn-neutral" id="finishBtn" disabled>✔ Finish early</button>
+    </div>
+    <div class="btnrow">
+      <button class="btn-danger" id="distractBtn">😵 I got distracted (−$1.00)</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="settings">
+      Rate $/hr <input type="number" id="rate" min="0" step="0.25" value="1">
+      Penalty $ <input type="number" id="penalty" min="0" step="0.25" value="1">
+      <button class="btn-neutral" id="saveSettings">Save</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>🎁 Reward shop
+      <span class="actions">
+        <button class="btn-neutral" id="delReward">Delete</button>
+        <button class="btn-green" id="claimReward">Claim</button>
+        <button class="btn-primary" id="addReward">＋ Add</button>
+      </span>
+    </h2>
+    <table>
+      <thead><tr><th>Reward</th><th>Price</th><th>Status</th></tr></thead>
+      <tbody id="shopBody"></tbody>
+    </table>
+    <div class="empty" id="shopEmpty">No rewards yet — add something worth focusing for.</div>
+  </div>
+
+  <div class="card">
+    <h2>📅 Monthly history</h2>
+    <table>
+      <thead><tr><th>Month</th><th>Focus</th><th>Distr.</th><th>Spent</th>
+                 <th>Net</th><th>Balance</th></tr></thead>
+      <tbody id="histBody"></tbody>
+    </table>
+    <div class="empty" id="histEmpty">Bank your first session to start a history.</div>
+  </div>
+
+  <div class="card" id="syncCard">
+    <h2>☁️ Sync
+      <span id="syncStatus" style="font:500 12px var(--body);color:var(--muted)">off — configure AWS to enable</span>
+    </h2>
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      <div id="gBtn"></div>
+      <span style="font-size:12.5px;color:var(--muted)" id="syncHint">
+        Your data syncs anonymously to this device's cloud identity.
+        Sign in with Google to keep it across all your devices.
+      </span>
+    </div>
+  </div>
+
+  <div class="foot">
+    Data is stored only in this browser ·
+    <button id="exportBtn">Export</button> ·
+    <button id="importBtn">Import</button>
+    <input type="file" id="importFile" accept=".json" hidden>
+  </div>
+
+  <div id="toasts"></div>
+
+  <dialog id="rewardDialog">
+    <h3>New reward</h3>
+    <label for="rName">What's the reward?</label>
+    <input id="rName" placeholder="e.g. Bubble tea">
+    <label for="rPrice">Price ($)</label>
+    <input id="rPrice" type="number" min="0.01" step="0.25" placeholder="5.00">
+    <div class="btnrow">
+      <button class="btn-neutral" id="rCancel">Cancel</button>
+      <button class="btn-primary" id="rSave">Add reward</button>
+    </div>
+  </dialog>
+</div>
+
+<script>
+'use strict';
+// ------------------------------------------------------------- persistence
+const KEY = 'focusbank';
+const DEFAULTS = { ratePerHour: 1, distractionPenalty: 1, defaultMinutes: 25 };
+
+function load() {
+  let d = {};
+  try { d = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { d = {}; }
+  d.settings = Object.assign({}, DEFAULTS, d.settings || {});
+  d.months = d.months || {};   // "2026-07": {focusSeconds,distractions,sessions,spent}
+  d.rewards = d.rewards || []; // {name,price,claimed,notified}
+  return d;
+}
+let data = load();
+function save() {
+  localStorage.setItem(KEY, JSON.stringify(data));
+  if (window.cloudSave) window.cloudSave();
+}
+
+const monthKey = (dt = new Date()) =>
+  `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}`;
+const monthLabel = k => new Date(k + '-02').toLocaleDateString([], { month: 'long', year: 'numeric' });
+const month = (k = monthKey()) =>
+  data.months[k] || (data.months[k] = { focusSeconds: 0, distractions: 0, sessions: 0, spent: 0 });
+const S = () => data.settings;
+const monthNet = k => {
+  const m = month(k);
+  return m.focusSeconds / 3600 * S().ratePerHour
+       - m.distractions * S().distractionPenalty - m.spent;
+};
+const balance = () => Object.keys(data.months).reduce((t, k) => t + monthNet(k), 0);
+
+const money = v => `${v < 0 ? '−' : ''}$${Math.abs(v).toFixed(2)}`;
+function fmtHMS(sec) {
+  sec = Math.max(0, Math.round(sec));
+  const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60;
+  return h > 0 ? `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`
+               : `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+// ------------------------------------------------------------------ session
+const st = { active: false, running: false, target: 0, elapsedBefore: 0,
+             startedAt: 0, distractions: 0 };
+const elapsed = () => st.elapsedBefore + (st.running ? (performance.now() - st.startedAt) / 1000 : 0);
+const remaining = () => Math.max(0, st.target - elapsed());
+
+const $ = id => document.getElementById(id);
+const CIRC = 2 * Math.PI * 101;
+
+function beep(freq = 880, ms = 180) {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.frequency.value = freq; g.gain.value = 0.06;
+    o.start(); o.stop(ctx.currentTime + ms / 1000);
+  } catch (e) {}
+}
+function toast(msg, ms = 5000) {
+  const t = document.createElement('div');
+  t.className = 'toast'; t.textContent = msg;
+  $('toasts').appendChild(t);
+  setTimeout(() => t.remove(), ms);
+}
+
+function startPause() {
+  if (!st.active) {
+    const mins = parseFloat($('minutes').value);
+    if (!(mins > 0)) { toast('Session length must be a positive number of minutes.'); return; }
+    S().defaultMinutes = mins; save();
+    Object.assign(st, { active: true, running: true, target: mins * 60,
+                        elapsedBefore: 0, startedAt: performance.now(), distractions: 0 });
+    $('minutes').disabled = true;
+    $('startBtn').textContent = '⏸ Pause';
+    $('finishBtn').disabled = false;
+  } else if (st.running) {
+    st.elapsedBefore = elapsed(); st.running = false;
+    $('startBtn').textContent = '▶ Resume';
+  } else {
+    st.running = true; st.startedAt = performance.now();
+    $('startBtn').textContent = '⏸ Pause';
+  }
+}
+
+function finishSession(early) {
+  const secs = Math.min(elapsed(), st.target);
+  st.running = false; st.active = false;
+  const m = month();
+  m.focusSeconds += Math.round(secs); m.sessions += 1; save();
+  const earned = secs / 3600 * S().ratePerHour;
+  const lost = st.distractions * S().distractionPenalty;
+  beep(early ? 660 : 880);
+  toast(`${early ? 'Banked early' : "⏰ Time's up"} — focused ${fmtHMS(secs)}. ` +
+        `Earned ${money(earned)}, distractions ${money(-lost)}. Net ${money(earned - lost)}.`, 7000);
+  st.elapsedBefore = 0; st.distractions = 0;
+  $('minutes').disabled = false;
+  $('startBtn').textContent = '▶ Start';
+  $('finishBtn').disabled = true;
+  document.title = 'Focus Bank — earn your rewards';
+  render();
+}
+
+// ------------------------------------------------------------------- shop
+let selectedReward = -1;
+
+function claimReward() {
+  const r = data.rewards[selectedReward];
+  if (!r) { toast('Select a reward in the list first.'); return; }
+  if (r.claimed) { toast(`Already claimed on ${r.claimed}. Want it again? Add it as a new reward.`); return; }
+  const bal = balance();
+  if (bal < r.price) {
+    toast(`"${r.name}" costs $${r.price.toFixed(2)} — you need ${money(r.price - bal)} more. Keep focusing!`);
+    return;
+  }
+  if (!confirm(`Spend $${r.price.toFixed(2)} on "${r.name}"? It will be deducted from your balance — go treat yourself!`)) return;
+  month().spent = +(month().spent + r.price).toFixed(2);
+  r.claimed = new Date().toISOString().slice(0, 10);
+  save(); render();
+}
+
+function checkAffordable() {
+  const bal = balance();
+  data.rewards.forEach(r => {
+    if (r.claimed) return;
+    if (bal >= r.price && !r.notified) {
+      r.notified = true; save(); beep(1040);
+      toast(`🎉 Reward unlocked! You can now afford "${r.name}" ($${r.price.toFixed(2)}). Claim it whenever you're ready.`, 8000);
+    } else if (bal < r.price && r.notified) {
+      r.notified = false; save();
+    }
+  });
+}
+
+// ------------------------------------------------------------------- render
+function render() {
+  const bal = balance(), k = monthKey(), m = month(k);
+  $('balance').textContent = money(bal);
+  $('balance').classList.toggle('neg', bal < 0);
+  $('monthStats').textContent =
+    `${monthLabel(k)}: ${money(monthNet(k))} · ${fmtHMS(m.focusSeconds)} focused · ` +
+    `${m.distractions} distractions · $${m.spent.toFixed(2)} spent`;
+
+  // shop
+  const sb = $('shopBody'); sb.innerHTML = '';
+  data.rewards.forEach((r, i) => {
+    const tr = document.createElement('tr');
+    if (i === selectedReward) tr.className = 'sel';
+    let status, cls = '';
+    if (r.claimed) { status = `✅ claimed ${r.claimed}`; cls = 'dim'; }
+    else if (bal >= r.price) { status = '🎉 affordable!'; cls = 'aff'; }
+    else status = `${money(r.price - bal)} to go`;
+    tr.innerHTML = `<td>${escapeHtml(r.name)}</td>` +
+                   `<td class="num">$${r.price.toFixed(2)}</td>` +
+                   `<td class="${cls}">${status}</td>`;
+    tr.onclick = () => { selectedReward = (selectedReward === i ? -1 : i); render(); };
+    sb.appendChild(tr);
+  });
+  $('shopEmpty').style.display = data.rewards.length ? 'none' : '';
+
+  // history with running balance (oldest → newest, shown newest first)
+  const hb = $('histBody'); hb.innerHTML = '';
+  const keys = Object.keys(data.months).sort();
+  let running = 0;
+  const rows = keys.map(kk => {
+    const net = monthNet(kk); running += net;
+    return { kk, mo: data.months[kk], net, running };
+  });
+  rows.reverse().forEach(({ kk, mo, net, running }) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML =
+      `<td>${monthLabel(kk)}</td><td class="num">${fmtHMS(mo.focusSeconds)}</td>` +
+      `<td class="num">${mo.distractions}</td><td class="num">$${mo.spent.toFixed(2)}</td>` +
+      `<td class="num ${net < 0 ? 'negc' : 'pos'}">${money(net)}</td>` +
+      `<td class="num ${running < 0 ? 'negc' : 'pos'}">${money(running)}</td>`;
+    hb.appendChild(tr);
+  });
+  $('histEmpty').style.display = keys.length ? 'none' : '';
+
+  checkAffordable();
+}
+
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, c =>
+    ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+
+// ------------------------------------------------------------------- loop
+function tick() {
+  if (st.active) {
+    const rem = remaining(), frac = st.target ? rem / st.target : 0;
+    $('timeText').textContent = fmtHMS(rem);
+    $('stateText').textContent = st.running ? 'focusing…' : 'paused';
+    document.title = `${fmtHMS(rem)} · Focus Bank`;
+    const ring = $('ringProg');
+    ring.style.strokeDashoffset = CIRC * (1 - frac);
+    ring.style.stroke = frac > 0.25 ? 'var(--violet)' : frac > 0.1 ? 'var(--gold)' : 'var(--red)';
+    const val = Math.min(elapsed(), st.target) / 3600 * S().ratePerHour
+              - st.distractions * S().distractionPenalty;
+    $('sessionValue').textContent = `Session value: ${money(val)}`;
+    if (st.running && rem <= 0) finishSession(false);
+  } else {
+    const mins = parseFloat($('minutes').value) || S().defaultMinutes;
+    $('timeText').textContent = fmtHMS(mins * 60);
+    $('stateText').textContent = 'ready';
+    $('ringProg').style.strokeDashoffset = 0;
+    $('ringProg').style.stroke = 'var(--violet)';
+    $('sessionValue').innerHTML = '&nbsp;';
+  }
+  requestAnimationFrame(tick);
+}
+
+// -------------------------------------------------------------- wire up UI
+$('startBtn').onclick = startPause;
+$('finishBtn').onclick = () => finishSession(true);
+$('distractBtn').onclick = () => {
+  month().distractions += 1;
+  if (st.active) st.distractions += 1;
+  save(); beep(300, 120); render();
+};
+$('saveSettings').onclick = () => {
+  const rate = parseFloat($('rate').value), pen = parseFloat($('penalty').value);
+  if (!(rate >= 0) || !(pen >= 0)) { toast('Rate and penalty must be non-negative numbers.'); return; }
+  S().ratePerHour = rate; S().distractionPenalty = pen; save();
+  $('distractBtn').textContent = `😵 I got distracted (−$${pen.toFixed(2)})`;
+  toast('Settings saved.'); render();
+};
+$('addReward').onclick = () => { $('rName').value = ''; $('rPrice').value = ''; $('rewardDialog').showModal(); };
+$('rCancel').onclick = () => $('rewardDialog').close();
+$('rSave').onclick = () => {
+  const name = $('rName').value.trim(), price = parseFloat($('rPrice').value);
+  if (!name || !(price > 0)) { toast('Give the reward a name and a positive price.'); return; }
+  data.rewards.push({ name, price: +price.toFixed(2), claimed: null, notified: false });
+  save(); $('rewardDialog').close(); render();
+};
+$('claimReward').onclick = claimReward;
+$('delReward').onclick = () => {
+  const r = data.rewards[selectedReward];
+  if (!r) { toast('Select a reward in the list first.'); return; }
+  if (confirm(`Remove "${r.name}" from the shop?`)) {
+    data.rewards.splice(selectedReward, 1); selectedReward = -1; save(); render();
+  }
+};
+$('exportBtn').onclick = () => {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'focus_bank_data.json'; a.click(); URL.revokeObjectURL(a.href);
+};
+$('importBtn').onclick = () => $('importFile').click();
+$('importFile').onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  f.text().then(txt => {
+    try {
+      const d = JSON.parse(txt);
+      if (!d.months || !d.settings) throw 0;
+      data = d; data.rewards = data.rewards || []; save(); render();
+      toast('Data imported.');
+    } catch { toast("That file doesn't look like a Focus Bank export."); }
+  });
+  e.target.value = '';
+};
+window.addEventListener('beforeunload', e => {
+  if (st.active && elapsed() > 5) { e.preventDefault(); e.returnValue = ''; }
+});
+
+// init
+$('minutes').value = S().defaultMinutes;
+$('rate').value = S().ratePerHour;
+$('penalty').value = S().distractionPenalty;
+$('distractBtn').textContent = `😵 I got distracted (−$${S().distractionPenalty.toFixed(2)})`;
+render(); tick();
+
+// bridge for the cloud sync module
+window.FB = {
+  get data() { return data; },
+  set data(d) { data = d; localStorage.setItem(KEY, JSON.stringify(data)); },
+  render, toast
+};
+</script>
+
+<script type="module">
+/* ============================ CLOUD SYNC =============================
+   Anonymous-first sync via Cognito Identity Pools + DynamoDB.
+   Fill in CFG from the CloudFormation stack outputs and your Google
+   OAuth client ID. Leave the placeholders and the app still works —
+   sync simply stays off.                                              */
+const CFG = {
+  region:         'us-east-2',            // e.g. 'us-east-1'
+  identityPoolId: 'us-east-2:05bc6bce-0739-49b9-8bfa-c35e3febdd6d',  // e.g. 'us-east-1:1234abcd-...'
+  googleClientId: '998004519126-rsgaml9bajuaquabvujf76dh5oegej9s.apps.googleusercontent.com',  // ends in .apps.googleusercontent.com
+  table:          'FocusBankData',
+};
+
+const statusEl = document.getElementById('syncStatus');
+const setStatus = (t, ok) => {
+  statusEl.textContent = t;
+  statusEl.style.color = ok ? 'var(--green)' : 'var(--muted)';
+};
+if (CFG.identityPoolId.startsWith('PASTE')) {
+  setStatus('off — configure AWS to enable');
+} else {
+  initSync();
+}
+
+async function initSync() {
+  const [{ CognitoIdentityClient, GetIdCommand, GetCredentialsForIdentityCommand },
+         { DynamoDBClient, GetItemCommand, PutItemCommand }] = await Promise.all([
+    import('https://esm.sh/@aws-sdk/client-cognito-identity@3'),
+    import('https://esm.sh/@aws-sdk/client-dynamodb@3'),
+  ]);
+
+  const ci = new CognitoIdentityClient({ region: CFG.region });
+  let googleToken = null;
+  let creds = null, credsExpire = 0;
+  const linked = () => localStorage.getItem('fb_linked') === '1';
+
+  async function ensureCreds() {
+    if (creds && Date.now() < credsExpire - 60000) return;
+    const logins = googleToken ? { 'accounts.google.com': googleToken } : undefined;
+    if (linked() && !logins) {           // upgraded identity needs its Google token
+      setStatus('sign in with Google to sync');
+      throw new Error('needs-google');
+    }
+    let identityId = localStorage.getItem('fb_idid');
+    if (!identityId) {
+      const r = await ci.send(new GetIdCommand({ IdentityPoolId: CFG.identityPoolId, Logins: logins }));
+      identityId = r.IdentityId;
+      localStorage.setItem('fb_idid', identityId);
+    }
+    let out;
+    try {
+      out = await ci.send(new GetCredentialsForIdentityCommand({ IdentityId: identityId, Logins: logins }));
+    } catch (e) {
+      if (logins) {                      // Google account already tied to another identity
+        localStorage.removeItem('fb_idid');
+        const r = await ci.send(new GetIdCommand({ IdentityPoolId: CFG.identityPoolId, Logins: logins }));
+        localStorage.setItem('fb_idid', r.IdentityId);
+        out = await ci.send(new GetCredentialsForIdentityCommand({ IdentityId: r.IdentityId, Logins: logins }));
+      } else throw e;
+    }
+    const c = out.Credentials;
+    creds = { accessKeyId: c.AccessKeyId, secretAccessKey: c.SecretKey, sessionToken: c.SessionToken };
+    credsExpire = new Date(c.Expiration).getTime();
+  }
+
+  const userId = () => localStorage.getItem('fb_idid');
+  const ddb = () => new DynamoDBClient({ region: CFG.region, credentials: creds });
+
+  async function pull() {
+    await ensureCreds();
+    const r = await ddb().send(new GetItemCommand({
+      TableName: CFG.table, Key: { userId: { S: userId() } } }));
+    if (!r.Item) return null;
+    return { data: JSON.parse(r.Item.data.S), updatedAt: Number(r.Item.updatedAt.N) };
+  }
+
+  async function push() {
+    await ensureCreds();
+    await ddb().send(new PutItemCommand({
+      TableName: CFG.table,
+      Item: { userId: { S: userId() },
+              data: { S: JSON.stringify(window.FB.data) },
+              updatedAt: { N: String(Date.now()) } } }));
+  }
+
+  // union merge: per-month field-wise max; rewards deduped by name+price
+  function merge(a, b) {
+    const out = JSON.parse(JSON.stringify(a));
+    for (const k of Object.keys(b.months || {})) {
+      const x = out.months[k], y = b.months[k];
+      out.months[k] = !x ? y : {
+        focusSeconds: Math.max(x.focusSeconds, y.focusSeconds),
+        distractions: Math.max(x.distractions, y.distractions),
+        sessions: Math.max(x.sessions, y.sessions),
+        spent: Math.max(x.spent, y.spent),
+      };
+    }
+    for (const r of (b.rewards || [])) {
+      const dup = out.rewards.find(o => o.name === r.name && o.price === r.price);
+      if (!dup) out.rewards.push(r);
+      else if (r.claimed && !dup.claimed) dup.claimed = r.claimed;
+    }
+    return out;
+  }
+
+  const hasActivity = d => Object.keys(d.months || {}).length || (d.rewards || []).length;
+
+  async function firstSync() {
+    const cloud = await pull();
+    const local = window.FB.data;
+    if (!cloud) { if (hasActivity(local)) await push(); return; }
+    if (JSON.stringify(cloud.data) === JSON.stringify(local)) return;
+    if (!hasActivity(local)) { window.FB.data = cloud.data; window.FB.render(); return; }
+    // both sides have history — merge (never silently discard focus time)
+    window.FB.data = merge(local, cloud.data);
+    window.FB.render();
+    await push();
+    window.FB.toast('Synced — cloud and local data merged.');
+  }
+
+  // debounced save hook, called by the app's save()
+  let timer = null;
+  window.cloudSave = () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => push().then(
+      () => setStatus(googleToken ? 'synced · Google connected' : 'synced · anonymous', true),
+      () => setStatus('offline — will retry on next change')), 1500);
+  };
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden' && timer) { clearTimeout(timer); push().catch(()=>{}); }
+  });
+
+  // ---- Google upgrade via Google Identity Services ----
+  const gis = document.createElement('script');
+  gis.src = 'https://accounts.google.com/gsi/client';
+  gis.onload = () => {
+    google.accounts.id.initialize({
+      client_id: CFG.googleClientId,
+      auto_select: linked(),
+      callback: async resp => {
+        googleToken = resp.credential;
+        localStorage.setItem('fb_linked', '1');
+        creds = null;                    // force re-auth with the Google login
+        try {
+          await ensureCreds();           // links guest identity → authenticated
+          await firstSync();
+          setStatus('synced · Google connected', true);
+          document.getElementById('syncHint').textContent =
+            'Signed in — your data follows you to any device where you sign in.';
+        } catch (e) { setStatus('sync error — check console'); console.error(e); }
+      },
+    });
+    google.accounts.id.renderButton(document.getElementById('gBtn'),
+      { theme: 'filled_black', size: 'medium', shape: 'pill' });
+    if (linked()) google.accounts.id.prompt();  // silent one-tap on return visits
+  };
+  document.head.appendChild(gis);
+
+  // ---- anonymous sync starts immediately, no interaction needed ----
+  if (!linked()) {
+    try {
+      await ensureCreds();
+      await firstSync();
+      setStatus('synced · anonymous', true);
+    } catch (e) { setStatus('offline — local only'); console.error(e); }
+  }
+}
+</script>
+</body>
+</html>

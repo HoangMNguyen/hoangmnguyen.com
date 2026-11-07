@@ -1,0 +1,18 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+
+# OS / editors / sync clients
+.DS_Store
+.dropbox
+.dropbox.attr
+.vscode/
+
+# Tooling
+node_modules/
