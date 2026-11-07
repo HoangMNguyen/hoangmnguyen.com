@@ -173,6 +173,10 @@ data "aws_iam_policy_document" "deploy" {
       "cloudfront:UpdateFunction",
       "cloudfront:PublishFunction",
       "cloudfront:DeleteFunction",
+      # The provider reads and sets the function's tags (default_tags) on every plan/apply.
+      "cloudfront:ListTagsForResource",
+      "cloudfront:TagResource",
+      "cloudfront:UntagResource",
     ]
     resources = ["arn:aws:cloudfront::${local.account_id}:function/${local.name}-*"]
   }

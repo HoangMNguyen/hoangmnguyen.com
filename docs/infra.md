@@ -71,7 +71,7 @@ actions, so the role cannot change its own trust or permissions:
 | Buckets | create/delete, `GetBucket*` and the other bucket-config reads, policy, public access block, ownership controls, encryption, lifecycle, tagging, `PutBucketAcl` (log delivery grant) | the site and log buckets |
 | Upload | `s3:PutObject`, `s3:DeleteObject` | site bucket objects |
 | Distribution | create (only with tag `Project=hoangmnguyen-site`); get, update, delete, invalidations, tags (only when tagged `Project=hoangmnguyen-site`); tag-on-create (only for untagged distributions) | `distribution/*` + tag conditions |
-| Functions | create, describe, get, update, publish, delete | `function/hoangmnguyen-site-*` |
+| Functions | create, describe, get, update, publish, delete, list/add/remove tags | `function/hoangmnguyen-site-*` |
 | OAC, response headers policy | get, get-config, update (no create, no delete) | exactly the site's `origin-access-control/<id>` and `response-headers-policy/<id>`, from `infra/bootstrap/site-ids.auto.tfvars` |
 | Cache policies | `ListCachePolicies`, `GetCachePolicy` (read-only) | `*` |
 | ACM | `RequestCertificate` (only `www.hoangmnguyen.com`, DNS validation); describe, list tags; tag/untag/delete only when tagged `Project=hoangmnguyen-site` | `*` for the request, `certificate/*` in us-east-1 otherwise |
