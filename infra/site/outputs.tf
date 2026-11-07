@@ -26,3 +26,13 @@ output "athena_workgroup" {
   description = "Workgroup holding the daily-visits named query."
   value       = aws_athena_workgroup.site.name
 }
+
+output "origin_access_control_id" {
+  description = "Feed into infra/bootstrap (site_origin_access_control_id) so CI can manage only this OAC."
+  value       = aws_cloudfront_origin_access_control.site.id
+}
+
+output "response_headers_policy_id" {
+  description = "Feed into infra/bootstrap (site_response_headers_policy_id) so CI can update only this policy."
+  value       = aws_cloudfront_response_headers_policy.security.id
+}

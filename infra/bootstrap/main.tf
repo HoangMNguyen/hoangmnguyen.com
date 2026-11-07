@@ -47,8 +47,9 @@ resource "aws_iam_role" "deploy" {
 
 # Exactly what infra/site and the upload/invalidation steps need. Resources are pinned by name
 # where the ARN carries one, by the Project tag where the ARN only carries an AWS-generated id
-# (distributions, certificates). `*` remains only where AWS has no resource-level permission or
-# the ARN is an unguessable id on an untaggable resource; each case is commented.
+# (distributions, certificates), and by exact id for the origin access control and response
+# headers policy (fed back from infra/site after the first local apply). `*` remains only where
+# AWS has no resource-level permission; each case is commented.
 data "aws_iam_policy_document" "deploy" {
   # --- Terraform state: only the site stack's key and its lock file ---------------------------
   statement {
@@ -175,27 +176,35 @@ data "aws_iam_policy_document" "deploy" {
     ]
     resources = ["arn:aws:cloudfront::${local.account_id}:function/${local.name}-*"]
   }
-  # Origin access controls and response headers policies are addressed by AWS-generated ids and
-  # cannot be tagged, so the account-wide wildcard for these two resource types is the narrowest
-  # scope AWS supports.
-  statement {
-    sid = "OriginAccessAndHeaders"
-    actions = [
-      "cloudfront:CreateOriginAccessControl",
-      "cloudfront:GetOriginAccessControl",
-      "cloudfront:GetOriginAccessControlConfig",
-      "cloudfront:UpdateOriginAccessControl",
-      "cloudfront:DeleteOriginAccessControl",
-      "cloudfront:CreateResponseHeadersPolicy",
-      "cloudfront:GetResponseHeadersPolicy",
-      "cloudfront:GetResponseHeadersPolicyConfig",
-      "cloudfront:UpdateResponseHeadersPolicy",
-      "cloudfront:DeleteResponseHeadersPolicy",
-    ]
-    resources = [
-      "arn:aws:cloudfront::${local.account_id}:origin-access-control/*",
-      "arn:aws:cloudfront::${local.account_id}:response-headers-policy/*",
-    ]
+  # Origin access control and response headers policy: AWS-generated ids, untaggable, and their
+  # Create* actions have no resource-level permission. The first site apply is local (admin), so
+  # CI never creates or deletes either; it may only read and update the two infra/site owns,
+  # pinned by the ids in site-ids.auto.tfvars (docs/infra.md, step 6). Until those ids are set the
+  # statements are absent. A change that would replace either resource fails in CI by design and
+  # is applied locally.
+  dynamic "statement" {
+    for_each = var.site_origin_access_control_id == "" ? [] : [var.site_origin_access_control_id]
+    content {
+      sid = "SiteOriginAccessControl"
+      actions = [
+        "cloudfront:GetOriginAccessControl",
+        "cloudfront:GetOriginAccessControlConfig",
+        "cloudfront:UpdateOriginAccessControl",
+      ]
+      resources = ["arn:aws:cloudfront::${local.account_id}:origin-access-control/${statement.value}"]
+    }
+  }
+  dynamic "statement" {
+    for_each = var.site_response_headers_policy_id == "" ? [] : [var.site_response_headers_policy_id]
+    content {
+      sid = "SiteResponseHeadersPolicy"
+      actions = [
+        "cloudfront:GetResponseHeadersPolicy",
+        "cloudfront:GetResponseHeadersPolicyConfig",
+        "cloudfront:UpdateResponseHeadersPolicy",
+      ]
+      resources = ["arn:aws:cloudfront::${local.account_id}:response-headers-policy/${statement.value}"]
+    }
   }
   # Read-only lookup of the AWS-managed CachingOptimized policy by name: ListCachePolicies has no
   # resource-level permission, and managed policies are not account resources.

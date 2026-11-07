@@ -72,7 +72,7 @@ actions, so the role cannot change its own trust or permissions:
 | Upload | `s3:PutObject`, `s3:DeleteObject` | site bucket objects |
 | Distribution | create (only with tag `Project=hoangmnguyen-site`); get, update, delete, invalidations, tags (only when tagged `Project=hoangmnguyen-site`); tag-on-create (only for untagged distributions) | `distribution/*` + tag conditions |
 | Functions | create, describe, get, update, publish, delete | `function/hoangmnguyen-site-*` |
-| OAC, response headers policies | create, get, update, delete | `origin-access-control/*`, `response-headers-policy/*` |
+| OAC, response headers policy | get, get-config, update (no create, no delete) | exactly the site's `origin-access-control/<id>` and `response-headers-policy/<id>`, from `infra/bootstrap/site-ids.auto.tfvars` |
 | Cache policies | `ListCachePolicies`, `GetCachePolicy` (read-only) | `*` |
 | ACM | `RequestCertificate` (only `www.hoangmnguyen.com`, DNS validation); describe, list tags; tag/untag/delete only when tagged `Project=hoangmnguyen-site` | `*` for the request, `certificate/*` in us-east-1 otherwise |
 | Glue | database and table CRUD, partition-index and tag reads, tagging | catalog, `database/hoangmnguyen_site`, `table/hoangmnguyen_site/*` |
@@ -80,16 +80,19 @@ actions, so the role cannot change its own trust or permissions:
 
 Where `*` (or a resource-type wildcard) remains, AWS gives no narrower option:
 `cloudfront:ListCachePolicies` and `acm:RequestCertificate` have no resource-level permissions
-(the managed cache policy is AWS-owned, read-only access); origin access controls and response
-headers policies are addressed by AWS-generated ids and cannot be tagged; distributions and
-certificates are also id-addressed, so they are fenced by the `Project` tag instead. The role does
-not run Athena queries, so it has no access to `athena-results/` objects.
+(the managed cache policy is AWS-owned, read-only access); distributions and certificates are
+id-addressed, so they are fenced by the `Project` tag instead. Origin access controls and response
+headers policies cannot be tagged and their `Create*` actions have no resource-level permission, so
+the role never creates or deletes them: the first site apply is local, and the role is then pinned
+to the two ids it produced (step 6). The role does not run Athena queries, so it has no access to
+`athena-results/` objects.
 
 ## One-time setup
 
 Run from the repository root. Requires the AWS CLI v2, Terraform >= 1.10 and `gh`.
 
-1. **Log in** with an admin identity:
+1. **Log in** with an admin identity (add `--profile <name>` and export `AWS_PROFILE` if your CLI
+   uses a named profile):
 
    ```sh
    aws login
@@ -104,7 +107,7 @@ Run from the repository root. Requires the AWS CLI v2, Terraform >= 1.10 and `gh
    ```
 
 3. **Set the repository variables** (variables, not secrets; neither value is sensitive). Setting
-   them enables the workflow, so do not push to `main` until step 5 has finished.
+   them enables the workflow, so do not push to `main` until step 6 has finished.
 
    ```sh
    gh variable set AWS_ROLE_ARN --repo HoangMNguyen/hoangmnguyen.com \
@@ -137,16 +140,27 @@ Run from the repository root. Requires the AWS CLI v2, Terraform >= 1.10 and `gh
    ```
 
    This waits until ACM sees the CNAME (usually a few minutes), then creates the distribution
-   (5–15 minutes). Then upload the site by running the workflow once:
+   (5–15 minutes).
+
+6. **Pin the deploy role to the site's OAC and headers policy.** Their ids are AWS-generated, so
+   the role only gets access to them now. Write the ids, re-apply the bootstrap, and push; the
+   push runs the workflow, which applies (no changes), uploads the site, and invalidates the cache:
 
    ```sh
-   gh workflow run deploy.yml --repo HoangMNguyen/hoangmnguyen.com --ref main
+   cat > infra/bootstrap/site-ids.auto.tfvars <<EOF
+   site_origin_access_control_id   = "$(terraform -chdir=infra/site output -raw origin_access_control_id)"
+   site_response_headers_policy_id = "$(terraform -chdir=infra/site output -raw response_headers_policy_id)"
+   EOF
+   terraform -chdir=infra/bootstrap apply
+   git add infra/bootstrap/site-ids.auto.tfvars
+   git commit -m "Pin deploy role to the site's OAC and response headers policy"
+   git push
    ```
 
-   Check it on the CloudFront domain before touching `www`:
+   Check the site on the CloudFront domain before touching `www`:
    `terraform -chdir=infra/site output -raw distribution_domain_name`.
 
-6. **Porkbun cutover.** In the DNS records for hoangmnguyen.com:
+7. **Porkbun cutover.** In the DNS records for hoangmnguyen.com:
    1. Delete the broken `www` CNAME.
    2. Delete Porkbun's parked records on the bare domain (the ALIAS/A records with an empty host
       pointing at Porkbun's parking page). Leave the `pricepulse` records and the ACM validation
@@ -156,7 +170,7 @@ Run from the repository root. Requires the AWS CLI v2, Terraform >= 1.10 and `gh
    4. Under **URL Forwarding** for hoangmnguyen.com, forward the bare domain (empty subdomain) to
       `https://www.hoangmnguyen.com`, type **Permanent (301)**, include the URI path, no wildcard.
 
-7. **Google sign-in (Focus Bank).** Google Cloud Console → APIs & Services → Credentials → the
+8. **Google sign-in (Focus Bank).** Google Cloud Console → APIs & Services → Credentials → the
    Focus Bank OAuth client → Authorized JavaScript origins → add `https://www.hoangmnguyen.com`.
 
 Verify:
@@ -175,6 +189,10 @@ curl -sI http://hoangmnguyen.com/ | grep -iE '^(HTTP|location)'       # 301 to w
 - Change the CSP: edit `infra/site/csp.txt`; the next apply updates the response headers policy.
 - Change the deploy role (`infra/bootstrap`): apply locally with an admin login; the role cannot
   modify itself.
+- A change that would replace the origin access control or the response headers policy (for
+  example renaming either) fails in CI by design, because the role cannot create or delete them.
+  Apply it locally, update `infra/bootstrap/site-ids.auto.tfvars` with the new ids, and re-apply
+  the bootstrap.
 
 ## Visits
 
