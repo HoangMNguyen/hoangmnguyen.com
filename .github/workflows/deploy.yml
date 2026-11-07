@@ -1,0 +1,120 @@
+name: deploy
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+# One lane for main (never cancelled mid-apply) and one per pull request (a new push supersedes
+# the previous plan). Plans and applies that still overlap wait on the S3 state lock.
+concurrency:
+  group: deploy-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.number) || 'main' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  AWS_REGION: us-east-1
+  TF_IN_AUTOMATION: "1"
+  TF_INPUT: "0"
+  TF_DIR: infra/site
+  TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
+
+# Every job requires the AWS_ROLE_ARN repository variable, so the public repo shows skipped runs,
+# not failures, until infra/bootstrap is applied (docs/infra.md).
+jobs:
+  # Pull requests from this repository only: fork PRs get no OIDC token, and the role trusts only
+  # this repository's subjects anyway.
+  plan:
+    if: >-
+      ${{ vars.AWS_ROLE_ARN != ''
+          && github.event_name == 'pull_request'
+          && github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: "1.17.1"
+          terraform_wrapper: false
+
+      - name: terraform fmt
+        run: terraform fmt -check -recursive infra
+
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: terraform init
+        run: terraform -chdir="$TF_DIR" init -backend-config="bucket=$TF_STATE_BUCKET"
+
+      - name: terraform validate
+        run: terraform -chdir="$TF_DIR" validate
+
+      - name: terraform plan
+        run: |
+          set -euo pipefail
+          terraform -chdir="$TF_DIR" plan -no-color -lock-timeout=10m | tee plan.txt
+          { echo '### Terraform plan (`infra/site`)'; echo '```hcl'; cat plan.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+  # Pushes to main and manual runs from main: apply, upload, invalidate.
+  deploy:
+    if: >-
+      ${{ vars.AWS_ROLE_ARN != ''
+          && github.event_name != 'pull_request'
+          && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: "1.17.1"
+          terraform_wrapper: false
+
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: terraform init
+        run: terraform -chdir="$TF_DIR" init -backend-config="bucket=$TF_STATE_BUCKET"
+
+      - name: terraform apply
+        run: terraform -chdir="$TF_DIR" apply -auto-approve -lock-timeout=10m
+
+      # Checkout gives every file a fresh mtime, so each sync re-uploads its files and the
+      # Cache-Control metadata always matches the rules below. Each pass deletes only what its own
+      # filters cover.
+      - name: upload site
+        run: |
+          set -euo pipefail
+          bucket=$(terraform -chdir="$TF_DIR" output -raw site_bucket)
+          # HTML, CSS, JS and everything else not matched below: revalidate on every use.
+          aws s3 sync site/ "s3://$bucket" --delete --no-progress \
+            --exclude "assets/fonts/*" --exclude "*.pdf" \
+            --cache-control "no-cache"
+          # Fonts carry a content hash in their file names.
+          aws s3 sync site/assets/fonts/ "s3://$bucket/assets/fonts/" --delete --no-progress \
+            --exclude "*.woff2" \
+            --cache-control "public, max-age=31536000, immutable"
+          aws s3 sync site/assets/fonts/ "s3://$bucket/assets/fonts/" --delete --no-progress \
+            --exclude "*" --include "*.woff2" \
+            --content-type "font/woff2" \
+            --cache-control "public, max-age=31536000, immutable"
+          aws s3 sync site/ "s3://$bucket" --delete --no-progress \
+            --exclude "*" --include "*.pdf" \
+            --cache-control "public, max-age=3600"
+
+      - name: invalidate CloudFront
+        run: |
+          set -euo pipefail
+          dist=$(terraform -chdir="$TF_DIR" output -raw distribution_id)
+          aws cloudfront create-invalidation --distribution-id "$dist" --paths '/*' \
+            --query Invalidation.Id --output text
