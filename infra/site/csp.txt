@@ -1,6 +1,6 @@
 default-src 'self'
 script-src 'self' https://esm.sh https://accounts.google.com/gsi/client
-style-src 'self' https://accounts.google.com/gsi/style
+style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style
 font-src 'self'
 img-src 'self' data: https://*.googleusercontent.com https://*.gstatic.com
 connect-src 'self' https://esm.sh https://accounts.google.com/gsi/ https://cognito-identity.us-east-2.amazonaws.com https://dynamodb.us-east-2.amazonaws.com
