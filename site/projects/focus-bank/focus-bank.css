@@ -71,9 +71,12 @@ th{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--muted)
    border-bottom:1px solid var(--border)}
 td{padding:8px;border-bottom:1px solid var(--card2)}
 tr:last-child td{border-bottom:0}
+/* The 6-column history table is wider than a phone-width card: scroll it inside the card, not the page. */
+.table-scroll{overflow-x:auto}
+@media(max-width:420px){th{padding:6px 4px;letter-spacing:.05em}td{padding:8px 4px}}
 tbody tr.sel{background:var(--card2);outline:1px solid var(--violet)}
 #shopBody tr{cursor:pointer}
-.num{font-family:var(--mono);font-size:12.5px}
+.num{font-family:var(--mono);font-size:12.5px;white-space:nowrap}
 .pos{color:var(--green)} .negc{color:var(--red)}
 .aff{color:var(--gold);font-weight:600} .dim{color:var(--muted)}
 .empty{color:var(--muted);font-size:13px;text-align:center;padding:14px 0}
