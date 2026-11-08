@@ -29,6 +29,7 @@ body{font-size:16px;line-height:1.65}
 .hero h1{font-family:var(--serif);font-weight:600;font-size:clamp(46px,7.2vw,80px);line-height:1.02;letter-spacing:-.02em}
 .lede{font-size:clamp(17px,2.1vw,20px);color:var(--muted);margin-top:22px;max-width:54ch}
 .actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:32px}
+.email{display:inline-flex;align-items:center;padding:11px 4px;font:500 14.5px/1.2 var(--body);color:var(--text);user-select:all}
 
 /* ---- sections ---- */
 section{padding:16px 0 72px;scroll-margin-top:84px}
