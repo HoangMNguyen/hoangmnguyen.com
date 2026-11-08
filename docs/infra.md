@@ -1,17 +1,51 @@
 # Infrastructure: www.hoangmnguyen.com
 
 Static files in `site/` served from a private S3 bucket through CloudFront in us-east-1. DNS stays
-at Porkbun; its records are edited by hand. Terraform state lives in the existing pricepulse state
-bucket (`pricepulse-tfstate-<account_id>`) under `site/`, locked with S3 lock files.
+at Porkbun; its records are edited by hand. Terraform state lives in the account's shared state
+bucket (`pricepulse-tfstate-<account_id>`, owned by `infra/account`) under `site/`, locked with S3
+lock files.
 
 | Stack | State key | Applied by |
 | --- | --- | --- |
+| `infra/account` | `account/terraform.tfstate` | you, locally (admin login) |
 | `infra/bootstrap` | `site/bootstrap.tfstate` | you, locally, once (admin login) |
 | `infra/site` | `site/terraform.tfstate` | you for the first apply, then GitHub Actions |
+
+Apply order: `infra/account` → `infra/bootstrap` → `infra/site`. The bootstrap's deploy role trusts
+the OIDC provider that `infra/account` owns, and the site workflow assumes that role.
 
 `.github/workflows/deploy.yml` plans `infra/site` on pull requests (plan in the run summary) and,
 on pushes to `main`, applies it, syncs `site/` to the bucket and invalidates `/*`. Every job is
 skipped until the `AWS_ROLE_ARN` repository variable exists.
+
+## Account foundations (`infra/account`)
+
+The pieces several projects in this AWS account depend on, owned by no single project:
+
+- **GitHub Actions OIDC provider** `token.actions.githubusercontent.com` (client id
+  `sts.amazonaws.com`). Both `hoangmnguyen-site-deploy` (this repo) and
+  `pricepulse-dev-github-deploy` (HoangMNguyen/pricepulse) trust it, and both stacks read it with a
+  `data "aws_iam_openid_connect_provider"` source; neither creates or changes it. An account allows
+  one provider per URL, so replacing it would break both deploy roles.
+- **Terraform state bucket** `pricepulse-tfstate-<account_id>` with versioning, SSE-S3 and public
+  access blocked. Keys: `account/` (this stack), `site/` (this repo), `bootstrap/` and `dev/`
+  (pricepulse). The name keeps its pricepulse prefix because every backend config points at it.
+- **The account's only budget**, `account-monthly`: monthly cost, $5, email to
+  hoangmnguyen.work@gmail.com at 80% of actual and 100% of forecast spend. Budgets are
+  account-wide whatever their name, so per-project budgets would only repeat the same alert; add
+  none elsewhere.
+
+The provider and the bucket were created by pricepulse and adopted with `import` blocks (no-ops
+once imported); both carry `prevent_destroy`. Apply it locally with an admin login:
+
+```sh
+terraform -chdir=infra/account init -backend-config="bucket=pricepulse-tfstate-<account_id>"
+terraform -chdir=infra/account apply
+```
+
+The stack keeps its own state in the bucket it manages; that is safe because the bucket is never
+destroyed (`prevent_destroy`). Rebuilding the account from nothing would mean dropping the import
+blocks and creating the bucket first with a local backend, then `terraform init -migrate-state`.
 
 ## What `infra/site` creates
 
@@ -56,7 +90,7 @@ access stays blocked.
 
 ## Deploy role (`infra/bootstrap`)
 
-`hoangmnguyen-site-deploy` trusts the account's existing GitHub OIDC provider (owned by pricepulse,
+`hoangmnguyen-site-deploy` trusts the account's GitHub OIDC provider (owned by `infra/account`,
 read with a data source, never created here) for exactly two subjects of
 `HoangMNguyen/hoangmnguyen.com`: pushes to `main` and pull requests, audience `sts.amazonaws.com`.
 GitHub may embed numeric owner/repo IDs in the subject, so the ID-embedded variants of the same two
@@ -99,9 +133,12 @@ Run from the repository root. Requires the AWS CLI v2, Terraform >= 1.10 and `gh
    ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
    ```
 
-2. **Apply the bootstrap** (creates the deploy role):
+2. **Apply the account foundations, then the bootstrap** (the foundations stack is already applied
+   in this account; re-running it is a no-op; the bootstrap creates the deploy role):
 
    ```sh
+   terraform -chdir=infra/account init -backend-config="bucket=pricepulse-tfstate-$ACCOUNT_ID"
+   terraform -chdir=infra/account apply
    terraform -chdir=infra/bootstrap init -backend-config="bucket=pricepulse-tfstate-$ACCOUNT_ID"
    terraform -chdir=infra/bootstrap apply
    ```
@@ -184,6 +221,8 @@ curl -sI http://hoangmnguyen.com/ | grep -iE '^(HTTP|location)'       # 301 to w
 
 ## Day to day
 
+- Change the budget, the OIDC provider or the state bucket settings (`infra/account`): apply
+  locally with an admin login. No workflow applies it.
 - Change the site or `infra/site`, open a pull request: the `plan` job checks formatting, validates
   and posts the plan to the run summary. Merge: the `deploy` job applies, uploads and invalidates.
 - Change the CSP: edit `infra/site/csp.txt`; the next apply updates the response headers policy.

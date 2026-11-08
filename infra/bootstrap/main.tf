@@ -4,8 +4,8 @@
 #   terraform -chdir=infra/bootstrap init -backend-config="bucket=pricepulse-tfstate-<acct>"
 #   terraform -chdir=infra/bootstrap apply
 
-# The account's GitHub OIDC provider is owned by the pricepulse stack; reference it, never create
-# a second one (an account allows one provider per URL).
+# The account's GitHub OIDC provider is owned by infra/account (shared with pricepulse); reference
+# it, never create a second one (an account allows one provider per URL).
 data "aws_iam_openid_connect_provider" "github" {
   url = "https://token.actions.githubusercontent.com"
 }
