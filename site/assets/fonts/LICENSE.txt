@@ -2,7 +2,7 @@ Fonts in this directory are latin subsets downloaded from Google Fonts and
 self-hosted so the site makes no third-party font requests.
 
 - Inter: Copyright 2020 The Inter Project Authors (https://github.com/rsms/inter)
-- Space Grotesk: Copyright 2020 The Space Grotesk Project Authors (https://github.com/floriankarsten/space-grotesk)
+- Fraunces: Copyright 2018 The Fraunces Project Authors (https://github.com/undercasetype/Fraunces)
 - JetBrains Mono: Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono)
 
 All three are licensed under the SIL Open Font License, Version 1.1:

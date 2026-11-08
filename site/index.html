@@ -10,128 +10,137 @@
 <meta property="og:url" content="https://www.hoangmnguyen.com/">
 <meta property="og:title" content="Hoang Nguyen — Data Engineer">
 <meta property="og:description" content="Data engineer at Penn Medicine building pipelines and automation in Python, SQL, and AWS, plus small tools like PricePulse and Focus Bank.">
-<meta name="theme-color" content="#0e1117">
+<meta name="theme-color" content="#eef4ea">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preload" href="/assets/fonts/fraunces-latin-400911.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/assets/css/fonts.css">
+<link rel="stylesheet" href="/assets/css/theme.css">
 <link rel="stylesheet" href="/assets/css/site.css">
 <script src="/assets/js/site.js" defer></script>
 </head>
-<body>
-<div class="wrap" id="top">
-
-  <nav>
+<body id="top">
+<header class="topbar">
+  <nav class="wrap nav" aria-label="Primary">
     <a class="logo" href="/">hoangmnguyen.com</a>
     <div class="links">
       <a href="#about">About</a>
       <a href="#experience">Experience</a>
       <a href="#projects">Projects</a>
       <a href="mailto:hoangmnguyen.work@gmail.com">Contact</a>
+      <a class="btn btn-primary btn-sm" href="/Hoang-Nguyen-Resume.pdf">Resume</a>
     </div>
   </nav>
+</header>
 
-  <header class="hero">
-    <div>
-      <div class="eyebrow">Hi, I'm</div>
-      <h1>Hoang Nguyen</h1>
-      <p>I build data pipelines and automation at Penn Medicine, and small tools like PricePulse and Focus Bank on the side.</p>
-      <div class="contacts">
-        <a href="/Hoang-Nguyen-Resume.pdf">Resume (PDF)</a>
-        <a href="https://github.com/HoangMNguyen">GitHub</a>
-        <a href="https://www.linkedin.com/in/hoangnguyen29497/">LinkedIn</a>
-        <a href="mailto:hoangmnguyen.work@gmail.com">Email</a>
-      </div>
+<main class="wrap">
+  <section class="hero" aria-label="Introduction">
+    <div class="eyebrow">Hi, I'm</div>
+    <h1>Hoang Nguyen</h1>
+    <p class="lede">I build data pipelines and automation at Penn Medicine, and small tools like PricePulse and Focus Bank on the side.</p>
+    <div class="actions">
+      <a class="btn btn-primary" href="/Hoang-Nguyen-Resume.pdf">Resume (PDF)</a>
+      <a class="btn glass" href="https://github.com/HoangMNguyen">GitHub</a>
+      <a class="btn glass" href="https://www.linkedin.com/in/hoangnguyen29497/">LinkedIn</a>
+      <a class="btn glass" href="mailto:hoangmnguyen.work@gmail.com">Email</a>
     </div>
-    <div class="ringbox" aria-hidden="true">
-      <svg width="170" height="170" viewBox="0 0 170 170">
-        <circle class="track" cx="85" cy="85" r="76" fill="none" stroke-width="8"/>
-        <circle class="prog" id="minRing" cx="85" cy="85" r="76" fill="none"
-                stroke-width="8" stroke-dasharray="477.5" stroke-dashoffset="477.5"/>
-      </svg>
-      <div class="clock">
-        <time id="clockText">--:--</time>
-        <span>this minute</span>
-      </div>
-    </div>
-  </header>
+  </section>
 
-  <section id="about" aria-labelledby="about-h">
+  <section id="about" class="reveal" aria-labelledby="about-h">
     <h2 id="about-h">About</h2>
-    <p class="prose">Data engineer with 5+ years turning clinical-trial data into reliable pipelines, databases, and reports at Penn Medicine's Center for Cellular Immunotherapies. Finishing an M.S. in Computer Science at Georgia Tech (Dec 2026); open to data engineering and Python automation roles in Philadelphia or remote.</p>
+    <div class="glass panel"><p class="prose">Data engineer with 5+ years turning clinical-trial data into reliable pipelines, databases, and reports at Penn Medicine's Center for Cellular Immunotherapies. Finishing an M.S. in Computer Science at Georgia Tech (Dec 2026); open to data engineering and Python automation roles in Philadelphia or remote.</p></div>
   </section>
 
-  <section id="experience" aria-labelledby="experience-h">
+  <section id="experience" class="reveal" aria-labelledby="experience-h">
     <h2 id="experience-h">Experience</h2>
-    <article class="role">
-      <div class="role-head">
-        <div>
-          <h3>Data Engineer</h3>
-          <div class="org">Penn Medicine, Center for Cellular Immunotherapies</div>
-        </div>
-        <span class="when">Aug 2021 – Present</span>
-      </div>
-      <ul class="highlights">
-        <li>ETL and reporting pipelines in Python and SQL, cutting report preparation time 90%.</li>
-        <li>A Python desktop suite with a no-code report builder, plus serverless usage telemetry on AWS.</li>
-        <li>Study databases on Veeva Vault and PostgreSQL across dev/test/prod; data-cleaning tools that cut cleaning time 60%.</li>
-      </ul>
-    </article>
-    <p class="earlier">Earlier: Data Coordinator (Co-op), Penn CCI, 2019 · Research Assistant (Co-op), Thomas Jefferson University Hospital, 2018</p>
+    <ol class="timeline">
+      <li class="current">
+        <article class="glass role">
+          <div class="role-head">
+            <div><h3>Data Engineer</h3><div class="org">Penn Medicine, Center for Cellular Immunotherapies</div></div>
+            <span class="when">Aug 2021 – Present</span>
+          </div>
+          <ul class="highlights">
+            <li>ETL and reporting pipelines in Python and SQL, cutting report preparation time 90%.</li>
+            <li>A Python desktop suite with a no-code report builder, plus serverless usage telemetry on AWS.</li>
+            <li>Study databases on Veeva Vault and PostgreSQL across dev/test/prod; data-cleaning tools that cut cleaning time 60%.</li>
+          </ul>
+        </article>
+      </li>
+      <li class="earlier">
+        <article class="glass role compact">
+          <div class="role-head">
+            <div><h3>Data Coordinator (Co-op)</h3><div class="org">Penn CCI</div></div>
+            <span class="when">2019</span>
+          </div>
+        </article>
+      </li>
+      <li class="earlier">
+        <article class="glass role compact">
+          <div class="role-head">
+            <div><h3>Research Assistant (Co-op)</h3><div class="org">Thomas Jefferson University Hospital</div></div>
+            <span class="when">2018</span>
+          </div>
+        </article>
+      </li>
+    </ol>
   </section>
 
-  <section id="projects" aria-labelledby="projects-h">
+  <section id="projects" class="reveal" aria-labelledby="projects-h">
     <h2 id="projects-h">Projects</h2>
-
-    <div class="card">
-      <span class="tag">Live · Data pipeline</span>
-      <h3>PricePulse</h3>
-      <p>Serverless price-history pipeline for ~3.7k IKEA and UNIQLO products: scheduled AWS Lambda jobs, idempotent loads into partitioned PostgreSQL, a FastAPI site, all in Terraform with CI/CD.</p>
-      <a class="cta" href="https://pricepulse.hoangmnguyen.com">Live site →</a>
-      <a class="cta" href="https://github.com/HoangMNguyen/pricepulse">Repo →</a>
-    </div>
-
-    <a class="card" href="/projects/focus-bank/">
-      <span class="tag">Live · Web app</span>
-      <h3>Focus Bank</h3>
-      <p>A gamified focus timer: focused hours earn money toward rewards you set; distractions cost you. Works offline in your browser, with optional Google sign-in to sync across devices.</p>
-      <span class="cta">Open the timer →</span>
-    </a>
-
-    <div class="card">
-      <span class="tag private">Private · Automation</span>
-      <h3>command-center</h3>
-      <p>Self-hosted automation hub where scheduled LLM agents triage email, budget, and news into a daily brief, with an approval queue before anything acts.</p>
-      <span class="cta muted">Details on request</span>
+    <div class="projects">
+      <article class="glass project featured">
+        <span class="status">Live · Data pipeline</span>
+        <h3>PricePulse</h3>
+        <p>Serverless price-history pipeline for ~3.7k IKEA and UNIQLO products: scheduled AWS Lambda jobs, idempotent loads into partitioned PostgreSQL, a FastAPI site, all in Terraform with CI/CD.</p>
+        <ul class="tags"><li>AWS Lambda</li><li>PostgreSQL</li><li>FastAPI</li><li>Terraform</li><li>CI/CD</li></ul>
+        <div class="project-links">
+          <a class="cta" href="https://pricepulse.hoangmnguyen.com">Live site →</a>
+          <a class="cta" href="https://github.com/HoangMNguyen/pricepulse">Repo →</a>
+        </div>
+      </article>
+      <a class="glass project" href="/projects/focus-bank/">
+        <span class="status">Live · Web app</span>
+        <h3>Focus Bank</h3>
+        <p>A gamified focus timer: focused hours earn money toward rewards you set; distractions cost you. Works offline in your browser, with optional Google sign-in to sync across devices.</p>
+        <ul class="tags"><li>Works offline</li><li>Google sign-in</li><li>Cross-device sync</li></ul>
+        <div class="project-links"><span class="cta">Open the timer →</span></div>
+      </a>
+      <article class="glass project">
+        <span class="status private">Private · Automation</span>
+        <h3>command-center</h3>
+        <p>Self-hosted automation hub where scheduled LLM agents triage email, budget, and news into a daily brief, with an approval queue before anything acts.</p>
+        <ul class="tags"><li>Self-hosted</li><li>LLM agents</li><li>Approval queue</li></ul>
+        <div class="project-links"><span class="cta muted">Details on request</span></div>
+      </article>
     </div>
   </section>
 
-  <section id="skills" aria-labelledby="skills-h">
+  <section id="skills" class="reveal" aria-labelledby="skills-h">
     <h2 id="skills-h">Skills &amp; Education</h2>
-    <ul class="chips">
-      <li>Python</li><li>pandas</li><li>FastAPI</li><li>SQL</li><li>PostgreSQL</li><li>Oracle</li><li>SQL Server</li>
-      <li>AWS (Lambda, S3, EventBridge, CloudFront)</li><li>Terraform</li><li>Docker</li><li>GitHub Actions</li><li>pytest</li>
-      <li>Veeva Vault</li><li>REDCap</li><li>Velos</li>
-    </ul>
-    <div class="edu">
-      <div class="edu-head">
-        <h3>Georgia Institute of Technology — M.S. Computer Science</h3>
-        <span class="when">Expected Dec 2026</span>
-      </div>
-      <p>Coursework: Database System Implementation, Intro to Graduate Algorithms, High Performance Computer Architecture, Software Development Process, Knowledge-Based AI, Human-Computer Interaction, Software Analysis, Introduction to Operating Systems, Computer Networks, Machine Learning for Trading.</p>
+    <div class="skill-groups">
+      <div class="glass skill-group"><h3>Languages</h3>
+        <ul class="chips"><li>Python</li><li>pandas</li><li>FastAPI</li><li>SQL</li><li>PostgreSQL</li><li>Oracle</li><li>SQL Server</li></ul></div>
+      <div class="glass skill-group"><h3>Cloud &amp; DevOps</h3>
+        <ul class="chips"><li>AWS (Lambda, S3, EventBridge, CloudFront)</li><li>Terraform</li><li>Docker</li><li>GitHub Actions</li><li>pytest</li></ul></div>
+      <div class="glass skill-group"><h3>Clinical data systems</h3>
+        <ul class="chips"><li>Veeva Vault</li><li>REDCap</li><li>Velos</li></ul></div>
     </div>
-    <div class="edu">
-      <div class="edu-head">
-        <h3>Drexel University — B.S. Biomedical Engineering</h3>
-        <span class="when">2021</span>
+    <div class="edu-grid">
+      <div class="glass edu">
+        <div class="edu-head"><h3>Georgia Institute of Technology — M.S. Computer Science</h3><span class="when">Expected Dec 2026</span></div>
+        <p>Coursework: Database System Implementation, Intro to Graduate Algorithms, High Performance Computer Architecture, Software Development Process, Knowledge-Based AI, Human-Computer Interaction, Software Analysis, Introduction to Operating Systems, Computer Networks, Machine Learning for Trading.</p>
       </div>
-      <p>Minors: Data Science, Economics</p>
+      <div class="glass edu">
+        <div class="edu-head"><h3>Drexel University — B.S. Biomedical Engineering</h3><span class="when">2021</span></div>
+        <p>Minors: Data Science, Economics</p>
+      </div>
     </div>
   </section>
+</main>
 
-  <footer>
-    <span>© <span id="yr">2026</span> Hoang Nguyen</span>
-    <a href="#top">Back to top ↑</a>
-  </footer>
-
-</div>
+<footer class="wrap footer">
+  <span>© <span id="yr">2026</span> Hoang Nguyen</span>
+  <a href="#top">Back to top ↑</a>
+</footer>
 </body>
 </html>

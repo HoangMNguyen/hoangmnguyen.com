@@ -193,7 +193,7 @@ function tick() {
     document.title = `${fmtHMS(rem)} · Focus Bank`;
     const ring = $('ringProg');
     ring.style.strokeDashoffset = CIRC * (1 - frac);
-    ring.style.stroke = frac > 0.25 ? 'var(--violet)' : frac > 0.1 ? 'var(--gold)' : 'var(--red)';
+    ring.style.stroke = frac > 0.25 ? 'var(--accent)' : frac > 0.1 ? 'var(--amber)' : 'var(--red)';
     const val = Math.min(elapsed(), st.target) / 3600 * S().ratePerHour
               - st.distractions * S().distractionPenalty;
     $('sessionValue').textContent = `Session value: ${money(val)}`;
@@ -203,7 +203,7 @@ function tick() {
     $('timeText').textContent = fmtHMS(mins * 60);
     $('stateText').textContent = 'ready';
     $('ringProg').style.strokeDashoffset = 0;
-    $('ringProg').style.stroke = 'var(--violet)';
+    $('ringProg').style.stroke = 'var(--accent)';
     $('sessionValue').innerHTML = '&nbsp;';
   }
   requestAnimationFrame(tick);

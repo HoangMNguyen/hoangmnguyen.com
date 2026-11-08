@@ -150,7 +150,7 @@ async function initSync() {
       },
     });
     google.accounts.id.renderButton(document.getElementById('gBtn'),
-      { theme: 'filled_black', size: 'medium', shape: 'pill' });
+      { theme: 'outline', size: 'medium', shape: 'pill' });
     if (linked()) google.accounts.id.prompt();  // silent one-tap on return visits
   };
   document.head.appendChild(gis);
