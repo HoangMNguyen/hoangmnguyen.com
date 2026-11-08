@@ -1,7 +1,7 @@
 # Focus Bank — cloud sync setup (anonymous + optional Google)
 
-Three steps: create a Google OAuth client, deploy the CloudFormation stack,
-paste three values into the app. ~20 minutes.
+Three steps: create a Google OAuth client, apply the Terraform stack in
+`infra/focus-bank/`, paste three values into the app. ~20 minutes.
 
 ## 1. Google OAuth client (free)
 
@@ -16,23 +16,31 @@ paste three values into the app. ~20 minutes.
    - Authorized JavaScript origins: `https://www.hoangmnguyen.com`
      and `http://localhost:8000` (for local testing).
 4. Copy the **Client ID** (ends in `.apps.googleusercontent.com`).
-## 2. Deploy the AWS stack
 
-1. AWS Console → CloudFormation → Create stack → "With new resources" →
-   upload `infra/focus-bank/cloudformation.yaml`.
-2. Parameters:
-   - `GoogleClientId`: paste the client ID from step 1.
-   - `BudgetEmail`: your email (creates a $5/month alert), or leave blank.
-3. Check the "I acknowledge that this template may create IAM resources
-   with custom names" box → Create stack. Takes ~2 minutes.
-4. When status is CREATE_COMPLETE, open the **Outputs** tab and copy
-   `IdentityPoolId`, `Region`, and `TableName`.
+## 2. Apply the AWS stack
+
+The stack is applied locally with an admin login (the site's CI role has no
+access to it). State lives in the pricepulse state bucket under
+`focus-bank/terraform.tfstate`; the resources live in `us-east-2`.
+
+```sh
+terraform -chdir=infra/focus-bank init -backend-config="bucket=pricepulse-tfstate-<acct>"
+terraform -chdir=infra/focus-bank apply -var="google_client_id=<client id from step 1>"
+```
+
+`google_client_id` defaults to the live client, so the `-var` is only needed
+for a new one. After the apply, `terraform -chdir=infra/focus-bank output`
+prints `identity_pool_id`, `region`, and `table_name`.
 
 What it creates: a DynamoDB table (provisioned at the free tier's 5 read /
 5 write units — a hard throughput ceiling, so it cannot generate a bill),
 a Cognito identity pool that allows anonymous guests and accepts Google
 sign-ins, and two IAM roles that only permit each identity to read/write
 the DynamoDB row whose key equals its own identity ID.
+
+The table, pool, roles, and role attachment were first created by a
+CloudFormation stack (`Focus-Bank`), which was retired after Terraform
+imported them; `infra/focus-bank/imports.tf` records the ids.
 
 ## 3. Configure the app
 
@@ -70,8 +78,8 @@ the site and clears the CloudFront cache.
 
 Cognito identity pools: free. DynamoDB at 5/5 provisioned units: $0 (always
 free tier) and physically incapable of scaling its own bill. No Lambda, no
-API Gateway. The optional AWS Budget emails you at 80% and forecast-100%
-of $5/month.
+API Gateway. This stack has no budget of its own: AWS budgets are
+account-wide, so the single account budget in `infra/account/` covers it.
 
 ## Notes & limits
 

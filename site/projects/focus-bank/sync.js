@@ -1,6 +1,6 @@
 /* ============================ CLOUD SYNC =============================
    Anonymous-first sync via Cognito Identity Pools + DynamoDB.
-   Fill in CFG from the CloudFormation stack outputs and your Google
+   Fill in CFG from `terraform -chdir=infra/focus-bank output` and your Google
    OAuth client ID. Leave the placeholders and the app still works —
    sync simply stays off.                                              */
 const CFG = {
